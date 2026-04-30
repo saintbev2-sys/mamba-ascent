@@ -1,17 +1,1690 @@
-{
-  "name": "Mamba's Ascent",
-  "short_name": "Mamba",
-  "description": "Cyberpunk action platformer",
-  "start_url": ".",
-  "display": "standalone",
-  "orientation": "landscape",
-  "theme_color": "#0a0a0f",
-  "background_color": "#000000",
-  "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Mamba's Ascent</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    color: #e8e8e8;
+    font-family: -apple-system, 'Courier New', monospace;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    overscroll-behavior: none;
+    position: fixed;
+  }
+  #game-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    background: #000;
+    box-shadow: 0 0 40px rgba(138, 43, 226, 0.3);
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+  }
+  #hud {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 10;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 0 #000;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #hud .stat-block { display: flex; flex-direction: column; gap: 4px; }
+  #hud .health { color: #ff5566; }
+  #hud .fuel { color: #66ccff; }
+  #hud .level { color: #88ccff; }
+  #hud .score { color: #ffd700; }
+  #hud .meter {
+    display: inline-block;
+    width: 80px;
+    height: 6px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  #hud .meter > div { height: 100%; transition: width 0.1s; }
+  #hp-bar { background: linear-gradient(90deg, #ff3344, #ff8866); }
+  #fuel-bar { background: linear-gradient(90deg, #4488ff, #88ddff); }
+
+  #top-buttons {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    display: flex;
+    gap: 6px;
+    z-index: 12;
+  }
+  .top-btn {
+    width: 38px; height: 38px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,215,0,0.4);
+    color: #ffd700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+  .top-btn:active { background: rgba(255,215,0,0.3); }
+
+  #overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    text-align: center;
+    overflow-y: auto;
+  }
+  #overlay h1 {
+    font-size: clamp(28px, 7vw, 56px);
+    color: #ffd700;
+    letter-spacing: 4px;
+    text-shadow: 4px 4px 0 #8a2be2, 8px 8px 20px rgba(138,43,226,0.5);
+    margin-bottom: 10px;
+    line-height: 1.1;
+  }
+  #overlay h2 {
+    font-size: clamp(12px, 2.5vw, 18px);
+    color: #88ccff;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+  }
+  #overlay p {
+    font-size: clamp(12px, 2vw, 15px);
+    max-width: 480px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+    color: #ccc;
+    padding: 0 10px;
+  }
+  #overlay .controls {
+    background: rgba(255,255,255,0.05);
+    padding: 14px 20px;
+    border: 1px solid #333;
+    margin-bottom: 18px;
+    font-size: 12px;
+    line-height: 1.7;
+    border-radius: 4px;
+    max-width: 420px;
+  }
+  #overlay .controls span { color: #ffd700; }
+  #overlay .btn {
+    background: #ffd700;
+    color: #000;
+    border: none;
+    padding: 14px 32px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #8a2be2;
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin: 6px;
+    border-radius: 2px;
+    -webkit-appearance: none;
+  }
+  #overlay .btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 #8a2be2;
+  }
+  #overlay .btn-secondary {
+    background: transparent;
+    color: #ffd700;
+    border: 2px solid #ffd700;
+    box-shadow: 4px 4px 0 #8a2be2;
+    font-size: 13px;
+    padding: 10px 20px;
+  }
+  #overlay .btn-tiny {
+    background: transparent;
+    color: #888;
+    border: 1px solid #444;
+    box-shadow: none;
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+  #music-status {
+    color: #88ccff;
+    font-size: 11px;
+    margin-top: 8px;
+    min-height: 16px;
+  }
+
+  /* Touch controls */
+  #touch-controls {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 15;
+    display: none;
+  }
+  #touch-controls.active { display: block; }
+
+  .touch-btn {
+    position: absolute;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,215,0,0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffd700;
+    font-size: 26px;
+    font-weight: bold;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background 0.05s;
+  }
+  .touch-btn.pressed {
+    background: rgba(255,215,0,0.35);
+    border-color: #ffd700;
+    transform: scale(0.95);
+  }
+
+  /* Left side: D-pad style */
+  #btn-left {
+    width: 64px; height: 64px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    left: max(20px, env(safe-area-inset-left));
+  }
+  #btn-right {
+    width: 64px; height: 64px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    left: calc(max(20px, env(safe-area-inset-left)) + 76px);
+  }
+
+  /* Right side: action buttons */
+  #btn-jump {
+    width: 78px; height: 78px;
+    bottom: calc(max(20px, env(safe-area-inset-bottom)) + 60px);
+    right: max(20px, env(safe-area-inset-right));
+    background: rgba(100,200,255,0.15);
+    border-color: rgba(100,200,255,0.5);
+    color: #88ddff;
+  }
+  #btn-jump.pressed { background: rgba(100,200,255,0.4); }
+
+  #btn-attack {
+    width: 70px; height: 70px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    right: calc(max(20px, env(safe-area-inset-right)) + 90px);
+    background: rgba(255,68,68,0.15);
+    border-color: rgba(255,68,68,0.5);
+    color: #ff8888;
+  }
+  #btn-attack.pressed { background: rgba(255,68,68,0.4); }
+
+  #btn-down {
+    width: 56px; height: 56px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    right: calc(max(20px, env(safe-area-inset-right)) + 5px);
+    font-size: 22px;
+  }
+
+  /* Orientation hint */
+  #orientation-hint {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffd700;
+    text-align: center;
+    padding: 20px;
+  }
+  #orientation-hint .icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+    animation: rotate 2s ease-in-out infinite;
+  }
+  @keyframes rotate {
+    0%, 100% { transform: rotate(-90deg); }
+    50% { transform: rotate(0deg); }
+  }
+  @media (max-width: 900px) and (orientation: portrait) and (hover: none) {
+    #orientation-hint { display: flex; }
+  }
+
+  .hidden { display: none !important; }
+
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+
+<div id="orientation-hint">
+  <div class="icon">📱</div>
+  <h2 style="font-size: 20px; margin-bottom: 12px; letter-spacing: 2px;">ROTATE YOUR DEVICE</h2>
+  <p style="color: #aaa; max-width: 280px;">Mamba's Ascent plays best in landscape mode</p>
+</div>
+
+<div id="game-container">
+  <canvas id="game" width="640" height="360"></canvas>
+
+  <div id="hud" class="hidden">
+    <div class="stat-block">
+      <div class="health">HP <span class="meter"><div id="hp-bar" style="width:100%"></div></span></div>
+      <div class="fuel">FUEL <span class="meter"><div id="fuel-bar" style="width:100%"></div></span></div>
+    </div>
+    <div class="stat-block" style="text-align: right;">
+      <div class="level">LEVEL <span id="level-display">1</span></div>
+      <div class="score">SCORE <span id="score-display">0</span></div>
+    </div>
+  </div>
+
+  <div id="top-buttons" class="hidden">
+    <div class="top-btn" id="btn-pause">⏸</div>
+    <div class="top-btn" id="btn-mute">🔊</div>
+  </div>
+
+  <div id="overlay">
+    <h1>MAMBA'S ASCENT</h1>
+    <h2 id="subtitle">// SECTOR ZERO //</h2>
+    <p id="story">
+      You wake up in the ruins of Helios Station. The crew is gone. Something hunts in the corridors.
+      You don't remember how you got here. You only know one thing: you have to get to the top.
+    </p>
+    <div class="controls" id="controls-info">
+      <div><span>← →</span> / <span>A D</span> &nbsp;·&nbsp; Move</div>
+      <div><span>↑</span> / <span>W</span> / <span>SPACE</span> &nbsp;·&nbsp; Jump <em style="color:#88ddff;">(hold to fly)</em></div>
+      <div><span>↓</span> / <span>S</span> &nbsp;·&nbsp; Crouch / Drop</div>
+      <div><span>F</span> / <span>J</span> &nbsp;·&nbsp; Attack</div>
+      <div><span>P</span> / <span>ESC</span> &nbsp;·&nbsp; Pause &nbsp;·&nbsp; <span>M</span> Mute</div>
+      <div style="margin-top:8px;color:#888;font-size:11px;">📱 Mobile: use the on-screen buttons. Hold ▲ to use jetpack.</div>
+    </div>
+    <div>
+      <button class="btn" id="start-btn">BEGIN ASCENT</button>
+    </div>
+    <div>
+      <button class="btn btn-secondary" id="music-btn">♫ LOAD CUSTOM MUSIC</button>
+      <button class="btn btn-tiny hidden" id="music-clear-btn">✕ Clear</button>
+    </div>
+    <div id="music-status"></div>
+    <input type="file" id="file-input" accept="audio/*">
+  </div>
+
+  <div id="touch-controls">
+    <div class="touch-btn" id="btn-left">◀</div>
+    <div class="touch-btn" id="btn-right">▶</div>
+    <div class="touch-btn" id="btn-down">▼</div>
+    <div class="touch-btn" id="btn-jump">▲</div>
+    <div class="touch-btn" id="btn-attack">⚔</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ============================================================
+// MAMBA'S ASCENT v2
+// Clean architecture: Input → Game → Render
+// ============================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = canvas.width;
+const H = canvas.height;
+const TILE = 20;
+
+// ============================================================
+// INPUT — keyboard + touch unified
+// ============================================================
+
+const Input = {
+  keys: {},
+  touch: { left: false, right: false, down: false, jump: false, attack: false },
+  state: {
+    left: false, right: false, up: false, down: false, attack: false,
+    jumpPressed: false, attackPressed: false,
+    _prevJump: false, _prevAttack: false,
+  },
+
+  init() {
+    window.addEventListener('keydown', e => {
+      if (this.keys[e.code]) return;
+      this.keys[e.code] = true;
+      if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyP','Escape','KeyM'].includes(e.code)) {
+        e.preventDefault();
+      }
+      if (e.code === 'KeyP' || e.code === 'Escape') Game.togglePause();
+      if (e.code === 'KeyM') Audio.toggleMute();
+    }, { passive: false });
+
+    window.addEventListener('keyup', e => { this.keys[e.code] = false; });
+
+    // Touch buttons
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouch) {
+      document.getElementById('touch-controls').classList.add('active');
     }
-  ]
+
+    const bind = (id, key) => {
+      const el = document.getElementById(id);
+      const on = (e) => { e.preventDefault(); this.touch[key] = true; el.classList.add('pressed'); };
+      const off = (e) => { e.preventDefault(); this.touch[key] = false; el.classList.remove('pressed'); };
+      el.addEventListener('touchstart', on, { passive: false });
+      el.addEventListener('touchend', off, { passive: false });
+      el.addEventListener('touchcancel', off, { passive: false });
+      // Mouse fallback for testing on desktop
+      el.addEventListener('mousedown', on);
+      el.addEventListener('mouseup', off);
+      el.addEventListener('mouseleave', off);
+    };
+    bind('btn-left', 'left');
+    bind('btn-right', 'right');
+    bind('btn-down', 'down');
+    bind('btn-jump', 'jump');
+    bind('btn-attack', 'attack');
+  },
+
+  poll() {
+    const s = this.state;
+    s._prevJump = s.up;
+    s._prevAttack = s.attack;
+    s.left = this.keys['ArrowLeft'] || this.keys['KeyA'] || this.touch.left;
+    s.right = this.keys['ArrowRight'] || this.keys['KeyD'] || this.touch.right;
+    s.up = this.keys['ArrowUp'] || this.keys['KeyW'] || this.keys['Space'] || this.touch.jump;
+    s.down = this.keys['ArrowDown'] || this.keys['KeyS'] || this.touch.down;
+    s.attack = this.keys['KeyF'] || this.keys['KeyJ'] || this.touch.attack;
+    s.jumpPressed = s.up && !s._prevJump;
+    s.attackPressed = s.attack && !s._prevAttack;
+  },
+};
+
+// ============================================================
+// AUDIO — Web Audio synth + custom track support
+// ============================================================
+
+const Audio = {
+  ctx: null,
+  master: null,
+  musicGain: null,
+  sfxGain: null,
+  muted: false,
+  initialized: false,
+  customBuffer: null,
+  customSource: null,
+  customStartedAt: 0,
+  customPausedAt: 0,
+  customPlaying: false,
+
+  init() {
+    if (this.initialized) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.5;
+      this.master.connect(this.ctx.destination);
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.4;
+      this.musicGain.connect(this.master);
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = 0.6;
+      this.sfxGain.connect(this.master);
+      this.initialized = true;
+    } catch (e) {
+      console.warn('Audio init failed:', e);
+    }
+  },
+
+  // iOS requires audio to start in response to a user gesture
+  resume() {
+    if (!this.initialized) this.init();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  },
+
+  toggleMute() {
+    this.muted = !this.muted;
+    if (this.master) this.master.gain.value = this.muted ? 0 : 0.5;
+    document.getElementById('btn-mute').textContent = this.muted ? '🔇' : '🔊';
+  },
+
+  // SFX: simple synth sounds
+  beep(freq, duration, type = 'square', vol = 0.3, sweep = 0) {
+    if (!this.initialized || this.muted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (sweep) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq + sweep), t + duration);
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(t);
+    osc.stop(t + duration);
+  },
+
+  noise(duration, vol = 0.2, freq = 1000) {
+    if (!this.initialized || this.muted) return;
+    const t = this.ctx.currentTime;
+    const bufferSize = this.ctx.sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i/bufferSize);
+    const source = this.ctx.createBufferSource();
+    source.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = freq;
+    const gain = this.ctx.createGain();
+    gain.gain.value = vol;
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+    source.start(t);
+  },
+
+  jump() { this.beep(440, 0.12, 'square', 0.2, 200); },
+  land() { this.beep(120, 0.06, 'sine', 0.15); },
+  attack() { this.beep(800, 0.08, 'sawtooth', 0.18, -400); },
+  hit() { this.noise(0.15, 0.25, 800); this.beep(150, 0.1, 'square', 0.2, -50); },
+  enemyDie() { this.beep(300, 0.15, 'sawtooth', 0.2, -200); this.beep(150, 0.2, 'square', 0.15, -100); },
+  pickup(coin = true) { this.beep(coin ? 800 : 600, 0.08, 'square', 0.2); setTimeout(() => this.beep(coin ? 1200 : 900, 0.1, 'square', 0.2), 60); },
+  hurt() { this.beep(200, 0.2, 'sawtooth', 0.25, -100); },
+  thrust() { this.noise(0.04, 0.06, 400); },
+  death() {
+    this.beep(400, 0.2, 'sawtooth', 0.3, -300);
+    setTimeout(() => this.beep(200, 0.3, 'sawtooth', 0.3, -150), 200);
+    setTimeout(() => this.beep(100, 0.5, 'sawtooth', 0.3, -50), 500);
+  },
+  victory() {
+    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.beep(f, 0.2, 'square', 0.25), i * 100));
+  },
+  exit() { this.beep(600, 0.1, 'square', 0.2); setTimeout(() => this.beep(900, 0.15, 'square', 0.2), 80); },
+
+  // Custom music
+  async loadCustom(arrayBuffer) {
+    if (!this.initialized) this.init();
+    if (!this.ctx) throw new Error('No audio context');
+    this.customBuffer = await this.ctx.decodeAudioData(arrayBuffer.slice(0));
+  },
+
+  startMusic() {
+    if (!this.customBuffer || !this.ctx || this.customPlaying) return;
+    this.customSource = this.ctx.createBufferSource();
+    this.customSource.buffer = this.customBuffer;
+    this.customSource.loop = true;
+    this.customSource.connect(this.musicGain);
+    const offset = this.customPausedAt || 0;
+    this.customSource.start(0, offset);
+    this.customStartedAt = this.ctx.currentTime - offset;
+    this.customPlaying = true;
+  },
+
+  pauseMusic() {
+    if (!this.customPlaying || !this.customSource) return;
+    this.customPausedAt = (this.ctx.currentTime - this.customStartedAt) % this.customBuffer.duration;
+    try { this.customSource.stop(); } catch(e) {}
+    this.customSource = null;
+    this.customPlaying = false;
+  },
+
+  stopMusic() {
+    this.pauseMusic();
+    this.customPausedAt = 0;
+  },
+
+  clearCustom() {
+    this.stopMusic();
+    this.customBuffer = null;
+  },
+};
+
+// ============================================================
+// MUSIC STORAGE — IndexedDB so the song persists between sessions
+// ============================================================
+
+const MusicStore = {
+  DB: 'mambas_ascent', STORE: 'music', KEY: 'track',
+
+  open() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(this.STORE);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  async save(arrayBuffer, name) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(this.STORE, 'readwrite');
+      tx.objectStore(this.STORE).put({ data: arrayBuffer, name }, this.KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
+  async load() {
+    try {
+      const db = await this.open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.STORE, 'readonly');
+        const req = tx.objectStore(this.STORE).get(this.KEY);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => resolve(null);
+      });
+    } catch (e) { return null; }
+  },
+
+  async clear() {
+    try {
+      const db = await this.open();
+      return new Promise((resolve) => {
+        const tx = db.transaction(this.STORE, 'readwrite');
+        tx.objectStore(this.STORE).delete(this.KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    } catch (e) {}
+  },
+};
+
+// ============================================================
+// LEVEL DATA
+// . empty | # solid | = platform | ^ spikes
+// P player | E enemy | * health | $ coin | X exit
+// ============================================================
+
+const LEVELS = [
+  {
+    name: "HELIOS STATION — DECK 1",
+    bg: 'station',
+    map: [
+      "................................",
+      "................................",
+      "................................",
+      "................$...............",
+      "...........=====................",
+      "................................",
+      ".........$......................",
+      ".....======.....................",
+      "................E...........X...",
+      "..............=====.........#...",
+      ".....*....E.................#...",
+      "P..============......===....#...",
+      "##..............................",
+      "##.....^^^......................",
+      "################################",
+      "################################",
+    ],
+  },
+  {
+    name: "ZERO-G CHAMBER",
+    bg: 'space',
+    map: [
+      "................................",
+      ".....$..........................",
+      "....====........................",
+      "................$$$.............",
+      "..........=========.............",
+      "................................",
+      ".......E........................",
+      "....========....................",
+      "................E........X......",
+      "...^^........=========...#......",
+      "########............=====#......",
+      "P.............*..........#......",
+      "===.....^^^^^.....^^^....#......",
+      "........................========",
+      "................................",
+      "################################",
+    ],
+  },
+  {
+    name: "THE BRIDGE",
+    bg: 'space',
+    map: [
+      ".................$..............",
+      "...........================.....",
+      "................................",
+      "....$...........................",
+      "..=====.........E..........X....",
+      "..............=====........#....",
+      "........E..................#....",
+      "....========...............#....",
+      "..........................==....",
+      ".......*........E...............",
+      "P=====================..........",
+      "................................",
+      ".....^^^^^.....^^^^^^...........",
+      "################################",
+      "################################",
+      "################################",
+    ],
+  },
+];
+
+// ============================================================
+// GAME STATE
+// ============================================================
+
+const Game = {
+  state: 'menu', // menu | playing | paused | won | dead | levelClear
+  prevState: null,
+  levelIndex: 0,
+  score: 0,
+  player: null,
+  enemies: [],
+  pickups: [],
+  particles: [],
+  attacks: [],
+  level: null,
+  camera: { x: 0, y: 0 },
+  exit: null,
+  time: 0,
+  shake: 0,
+
+  reset() {
+    this.score = 0;
+    this.time = 0;
+    this.levelIndex = 0;
+  },
+
+  setState(newState) {
+    if (this.state === newState) return;
+    this.prevState = this.state;
+    this.state = newState;
+    UI.onStateChange(newState);
+  },
+
+  togglePause() {
+    if (this.state === 'playing') {
+      this.setState('paused');
+      Audio.pauseMusic();
+    } else if (this.state === 'paused') {
+      this.setState('playing');
+      Audio.startMusic();
+    }
+  },
+};
+
+// ============================================================
+// PLAYER
+// ============================================================
+
+function makePlayer(x, y) {
+  return {
+    x, y, w: 14, h: 26,
+    vx: 0, vy: 0,
+    onGround: false,
+    facing: 1,
+    hp: 100, maxHp: 100,
+    fuel: 100, maxFuel: 100,
+    jetpackActive: false,
+    coyote: 0,
+    jumpBuffer: 0,
+    attackTimer: 0,
+    attackCooldown: 0,
+    invuln: 0,
+    crouching: false,
+    runFrame: 0,
+    dead: false,
+    isPlayer: true,
+  };
 }
+
+function updatePlayer(p, dt) {
+  if (p.dead) return;
+
+  const I = Input.state;
+
+  // Horizontal
+  const speed = 1.8;
+  let target = 0;
+  if (I.left)  { target = -speed; p.facing = -1; }
+  if (I.right) { target =  speed; p.facing =  1; }
+  if (p.attackTimer > 0) target *= 0.3;
+  p.vx += (target - p.vx) * 0.4;
+  if (Math.abs(p.vx) < 0.05) p.vx = 0;
+
+  // Crouch
+  p.crouching = I.down && p.onGround;
+
+  // Jump (coyote + buffer)
+  const wasOnGround = p.onGround;
+  if (p.onGround) p.coyote = 8; else p.coyote--;
+  if (I.jumpPressed) p.jumpBuffer = 8;
+  else p.jumpBuffer--;
+
+  if (p.jumpBuffer > 0 && p.coyote > 0 && p.attackTimer <= 0) {
+    p.vy = -5.2;
+    p.coyote = 0;
+    p.jumpBuffer = 0;
+    spawnDust(p.x + p.w/2, p.y + p.h, 4);
+    Audio.jump();
+  }
+
+  // Variable jump
+  if (!I.up && p.vy < -2) p.vy = -2;
+
+  // JETPACK — hold jump in the air to thrust upward, drains fuel
+  p.jetpackActive = false;
+  if (I.up && !p.onGround && p.fuel > 0 && !I.jumpPressed) {
+    // Only activate if jump button is held (not the initial press, which is for jumping)
+    if (p.coyote <= 0) {
+      p.jetpackActive = true;
+      p.vy -= 0.55; // counter gravity + thrust upward
+      if (p.vy < -3.5) p.vy = -3.5; // cap upward speed
+      p.fuel -= 0.6;
+      if (p.fuel < 0) p.fuel = 0;
+      // Particles + sound
+      if (Math.random() < 0.6) {
+        spawnFlame(p.x + p.w/2 - 2, p.y + p.h - 2);
+        spawnFlame(p.x + p.w/2 + 2, p.y + p.h - 2);
+      }
+      if (Math.floor(Game.time * 30) % 2 === 0) Audio.thrust();
+    }
+  }
+
+  // Recharge fuel on ground
+  if (p.onGround && p.fuel < p.maxFuel) {
+    p.fuel += 0.8;
+    if (p.fuel > p.maxFuel) p.fuel = p.maxFuel;
+  }
+
+  // Gravity
+  p.vy += 0.32;
+  if (p.vy > 9) p.vy = 9;
+
+  // Move
+  moveAndCollide(p, p.vx, p.vy);
+
+  // Land
+  if (!wasOnGround && p.onGround && Math.abs(p.vy) < 0.1) {
+    Audio.land();
+    spawnDust(p.x + p.w/2, p.y + p.h, 3);
+  }
+
+  // Attack
+  p.attackCooldown--;
+  p.attackTimer--;
+  if (I.attackPressed && p.attackCooldown <= 0 && p.attackTimer <= 0) {
+    p.attackTimer = 16;
+    p.attackCooldown = 22;
+    Audio.attack();
+    Game.attacks.push({
+      x: p.facing === 1 ? p.x + p.w : p.x - 18,
+      y: p.y + 4,
+      w: 18, h: 18,
+      ttl: 10,
+      hits: new Set(),
+      facing: p.facing,
+      ownerIsPlayer: true,
+    });
+  }
+
+  // Animation
+  if (Math.abs(p.vx) > 0.5 && p.onGround) p.runFrame += dt * 0.15;
+  else p.runFrame = 0;
+
+  p.invuln--;
+
+  // Pickups
+  for (const pk of Game.pickups) {
+    if (pk.taken) continue;
+    if (rectOverlap(p, pk)) {
+      pk.taken = true;
+      if (pk.type === 'health') {
+        p.hp = Math.min(p.maxHp, p.hp + 25);
+        spawnText(pk.x, pk.y, '+25 HP', '#88ff88');
+        Audio.pickup(false);
+      } else {
+        Game.score += 100;
+        spawnText(pk.x, pk.y, '+100', '#ffd700');
+        Audio.pickup(true);
+      }
+      for (let i = 0; i < 8; i++) spawnSparkle(pk.x + 6, pk.y + 6, pk.type === 'health' ? '#88ff88' : '#ffd700');
+    }
+  }
+
+  // Exit
+  if (Game.exit && rectOverlap(p, Game.exit)) {
+    Audio.exit();
+    Game.setState('levelClear');
+  }
+
+  // Pit
+  if (p.y > Game.level.pixelH + 50) damagePlayer(p, 999);
+}
+
+function damagePlayer(p, amount) {
+  if (p.invuln > 0 || p.dead) return;
+  p.hp -= amount;
+  p.invuln = 60;
+  Game.shake = 8;
+  Audio.hurt();
+  if (p.hp <= 0) {
+    p.hp = 0;
+    p.dead = true;
+    Audio.death();
+    Audio.stopMusic();
+    Game.setState('dead');
+    for (let i = 0; i < 20; i++) spawnSparkle(p.x + p.w/2, p.y + p.h/2, '#ff4444');
+  }
+}
+
+// ============================================================
+// COLLISION
+// ============================================================
+
+function moveAndCollide(e, dx, dy) {
+  e.x += dx;
+  collideAxis(e, 'x', dx);
+  e.y += dy;
+  e.onGround = false;
+  collideAxis(e, 'y', dy);
+}
+
+function collideAxis(e, axis, delta) {
+  const lvl = Game.level;
+  const left   = Math.floor(e.x / TILE);
+  const right  = Math.floor((e.x + e.w - 1) / TILE);
+  const top    = Math.floor(e.y / TILE);
+  const bottom = Math.floor((e.y + e.h - 1) / TILE);
+
+  for (let ty = top; ty <= bottom; ty++) {
+    for (let tx = left; tx <= right; tx++) {
+      const t = getTile(tx, ty);
+      if (t === '#') {
+        if (axis === 'x') {
+          if (delta > 0) { e.x = tx * TILE - e.w; e.vx = 0; }
+          else if (delta < 0) { e.x = (tx+1) * TILE; e.vx = 0; }
+        } else {
+          if (delta > 0) { e.y = ty * TILE - e.h; e.vy = 0; e.onGround = true; }
+          else if (delta < 0) { e.y = (ty+1) * TILE; e.vy = 0; }
+        }
+      } else if (t === '=' && axis === 'y' && delta > 0) {
+        const prevBottom = e.y + e.h - delta;
+        if (prevBottom <= ty * TILE + 2 && !(Input.state.down && e.isPlayer)) {
+          e.y = ty * TILE - e.h;
+          e.vy = 0;
+          e.onGround = true;
+        }
+      } else if (t === '^') {
+        if (e.isPlayer) damagePlayer(e, 30);
+      }
+    }
+  }
+}
+
+function getTile(tx, ty) {
+  const lvl = Game.level;
+  if (tx < 0 || ty < 0 || tx >= lvl.w || ty >= lvl.h) return '#';
+  return lvl.tiles[ty][tx];
+}
+
+function rectOverlap(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// ============================================================
+// ENEMIES
+// ============================================================
+
+function makeEnemy(x, y) {
+  return {
+    x, y, w: 16, h: 22,
+    vx: -0.6, vy: 0,
+    onGround: false,
+    facing: -1,
+    hp: 2,
+    hurtTimer: 0,
+    isEnemy: true,
+  };
+}
+
+function updateEnemy(en) {
+  en.vy += 0.3;
+  if (en.vy > 8) en.vy = 8;
+
+  const oldX = en.x;
+  en.x += en.vx;
+  collideAxis(en, 'x', en.vx);
+  if (en.x === oldX) {
+    en.vx = -en.vx;
+    en.facing = -en.facing;
+  }
+
+  // Edge detection
+  if (en.onGround) {
+    const aheadX = en.facing > 0 ? en.x + en.w + 2 : en.x - 2;
+    const belowY = en.y + en.h + 2;
+    const tileAhead = getTile(Math.floor(aheadX / TILE), Math.floor(belowY / TILE));
+    if (tileAhead !== '#' && tileAhead !== '=') {
+      en.vx = -en.vx;
+      en.facing = -en.facing;
+    }
+  }
+
+  en.y += en.vy;
+  en.onGround = false;
+  collideAxis(en, 'y', en.vy);
+
+  en.hurtTimer--;
+
+  // Hit player
+  if (rectOverlap(en, Game.player)) {
+    damagePlayer(Game.player, 15);
+    const dir = Game.player.x < en.x ? -1 : 1;
+    Game.player.vx = dir * 3;
+    Game.player.vy = -3;
+  }
+}
+
+// ============================================================
+// PARTICLES
+// ============================================================
+
+function spawnDust(x, y, n) {
+  for (let i = 0; i < n; i++) Game.particles.push({
+    x, y, vx: (Math.random() - 0.5) * 2, vy: -Math.random() * 1.5,
+    life: 20, size: 2, color: '#888', gravity: 0.08,
+  });
+}
+function spawnFlame(x, y) {
+  Game.particles.push({
+    x, y,
+    vx: (Math.random() - 0.5) * 1.5,
+    vy: 1 + Math.random() * 1.5,
+    life: 12 + Math.random() * 8, size: 3,
+    color: Math.random() < 0.5 ? '#ff8844' : '#ffd700',
+    gravity: -0.03,
+  });
+}
+function spawnSparkle(x, y, color) {
+  Game.particles.push({
+    x, y,
+    vx: (Math.random() - 0.5) * 4,
+    vy: (Math.random() - 0.5) * 4,
+    life: 25 + Math.random() * 15, size: 2, color, gravity: 0.08,
+  });
+}
+function spawnText(x, y, text, color) {
+  Game.particles.push({ x, y, vx: 0, vy: -0.8, life: 40, text, color, size: 0, gravity: 0 });
+}
+
+function updateParticles() {
+  for (const p of Game.particles) {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += p.gravity;
+    p.life--;
+  }
+  Game.particles = Game.particles.filter(p => p.life > 0);
+}
+
+// ============================================================
+// LEVEL LOADING
+// ============================================================
+
+function loadLevel(idx) {
+  const data = LEVELS[idx];
+  const tiles = data.map.map(row => row.split(''));
+  const h = tiles.length;
+  const w = tiles[0].length;
+  Game.level = { name: data.name, bg: data.bg, tiles, w, h, pixelW: w * TILE, pixelH: h * TILE };
+  Game.enemies = [];
+  Game.pickups = [];
+  Game.attacks = [];
+  Game.particles = [];
+  Game.exit = null;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const c = tiles[y][x];
+      if (c === 'P') {
+        Game.player = makePlayer(x * TILE, y * TILE - 6);
+        tiles[y][x] = '.';
+      } else if (c === 'E') {
+        Game.enemies.push(makeEnemy(x * TILE, y * TILE - 2));
+        tiles[y][x] = '.';
+      } else if (c === '*') {
+        Game.pickups.push({ x: x*TILE+4, y: y*TILE+4, w: 12, h: 12, type: 'health', taken: false });
+        tiles[y][x] = '.';
+      } else if (c === '$') {
+        Game.pickups.push({ x: x*TILE+4, y: y*TILE+4, w: 12, h: 12, type: 'score', taken: false });
+        tiles[y][x] = '.';
+      } else if (c === 'X') {
+        Game.exit = { x: x*TILE, y: y*TILE - 10, w: TILE, h: TILE + 10 };
+        tiles[y][x] = '.';
+      }
+    }
+  }
+
+  Game.levelIndex = idx;
+  document.getElementById('level-display').textContent = (idx + 1);
+}
+
+// ============================================================
+// UPDATE
+// ============================================================
+
+function update(dt) {
+  if (Game.state !== 'playing') return;
+  Game.time += dt;
+  Input.poll();
+
+  updatePlayer(Game.player, dt);
+  for (const e of Game.enemies) updateEnemy(e);
+
+  // Attacks
+  for (const a of Game.attacks) {
+    a.ttl--;
+    if (a.ownerIsPlayer) {
+      for (const en of Game.enemies) {
+        if (a.hits.has(en) || en.dead) continue;
+        if (rectOverlap(a, en)) {
+          a.hits.add(en);
+          en.hp--;
+          en.hurtTimer = 10;
+          en.vx = a.facing * 2.5;
+          Game.shake = 4;
+          Audio.hit();
+          for (let i = 0; i < 6; i++) spawnSparkle(en.x + en.w/2, en.y + en.h/2, '#ff8844');
+          if (en.hp <= 0) {
+            en.dead = true;
+            Game.score += 50;
+            Audio.enemyDie();
+            spawnText(en.x, en.y, '+50', '#ffd700');
+            for (let i = 0; i < 12; i++) spawnSparkle(en.x + en.w/2, en.y + en.h/2, '#ff4444');
+          }
+        }
+      }
+    }
+  }
+  Game.attacks = Game.attacks.filter(a => a.ttl > 0);
+  Game.enemies = Game.enemies.filter(e => !e.dead);
+
+  updateParticles();
+
+  // Camera
+  const tx = Game.player.x - W / 2;
+  const ty = Game.player.y - H / 2;
+  Game.camera.x += (tx - Game.camera.x) * 0.1;
+  Game.camera.y += (ty - Game.camera.y) * 0.1;
+  Game.camera.x = Math.max(0, Math.min(Game.level.pixelW - W, Game.camera.x));
+  Game.camera.y = Math.max(0, Math.min(Game.level.pixelH - H, Game.camera.y));
+
+  if (Game.shake > 0) Game.shake -= 0.5;
+
+  // HUD
+  document.getElementById('hp-bar').style.width = (Game.player.hp / Game.player.maxHp * 100) + '%';
+  document.getElementById('fuel-bar').style.width = (Game.player.fuel / Game.player.maxFuel * 100) + '%';
+  document.getElementById('score-display').textContent = Game.score;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+
+function drawBackground(bg) {
+  if (bg === 'space') {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#0a0020');
+    grad.addColorStop(1, '#1a0033');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    for (let i = 0; i < 60; i++) {
+      const sx = (i * 137 - Game.camera.x * 0.2) % W;
+      const sy = (i * 71) % H;
+      const x = sx < 0 ? sx + W : sx;
+      ctx.fillStyle = i % 5 === 0 ? '#ffd700' : '#ffffff';
+      ctx.globalAlpha = 0.4 + (i % 3) * 0.2;
+      ctx.fillRect(x, sy, 1, 1);
+    }
+    ctx.globalAlpha = 1;
+    const px = 500 - Game.camera.x * 0.1;
+    ctx.fillStyle = '#4a2a6a';
+    ctx.beginPath(); ctx.arc(px, 80, 40, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#6a3a8a';
+    ctx.beginPath(); ctx.arc(px - 10, 75, 38, 0, Math.PI * 2); ctx.fill();
+  } else {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#1a1a2e');
+    grad.addColorStop(1, '#0a0a1a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'rgba(80, 80, 120, 0.15)';
+    for (let i = 0; i < 8; i++) {
+      const x = (i * 90 - Game.camera.x * 0.3) % (W + 90);
+      const xx = x < 0 ? x + W + 90 : x;
+      ctx.fillRect(xx, 0, 4, H);
+    }
+  }
+}
+
+function drawTiles() {
+  const lvl = Game.level;
+  const startX = Math.max(0, Math.floor(Game.camera.x / TILE));
+  const endX = Math.min(lvl.w, Math.ceil((Game.camera.x + W) / TILE) + 1);
+  const startY = Math.max(0, Math.floor(Game.camera.y / TILE));
+  const endY = Math.min(lvl.h, Math.ceil((Game.camera.y + H) / TILE) + 1);
+
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      const t = lvl.tiles[y][x];
+      const sx = x * TILE - Game.camera.x;
+      const sy = y * TILE - Game.camera.y;
+      if (t === '#') {
+        ctx.fillStyle = '#3a3a52';
+        ctx.fillRect(sx, sy, TILE, TILE);
+        ctx.fillStyle = '#4a4a6a';
+        ctx.fillRect(sx + 1, sy + 1, TILE - 2, 2);
+        ctx.fillRect(sx + 1, sy + 1, 2, TILE - 2);
+        ctx.fillStyle = '#222236';
+        ctx.fillRect(sx + TILE - 3, sy + 3, 2, TILE - 4);
+        ctx.fillRect(sx + 3, sy + TILE - 3, TILE - 4, 2);
+        ctx.fillStyle = '#1a1a2a';
+        ctx.fillRect(sx + 3, sy + 3, 2, 2);
+        ctx.fillRect(sx + TILE - 5, sy + 3, 2, 2);
+        ctx.fillRect(sx + 3, sy + TILE - 5, 2, 2);
+        ctx.fillRect(sx + TILE - 5, sy + TILE - 5, 2, 2);
+      } else if (t === '=') {
+        ctx.fillStyle = '#5a4a8a';
+        ctx.fillRect(sx, sy, TILE, 6);
+        ctx.fillStyle = '#7a6aaa';
+        ctx.fillRect(sx, sy, TILE, 2);
+        ctx.fillStyle = '#3a2a6a';
+        ctx.fillRect(sx, sy + 5, TILE, 1);
+      } else if (t === '^') {
+        ctx.fillStyle = '#aa3344';
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) {
+          ctx.moveTo(sx + i * 5, sy + TILE);
+          ctx.lineTo(sx + i * 5 + 2.5, sy + TILE - 10);
+          ctx.lineTo(sx + i * 5 + 5, sy + TILE);
+        }
+        ctx.fill();
+        ctx.fillStyle = '#dd5566';
+        ctx.fillRect(sx, sy + TILE - 2, TILE, 2);
+      }
+    }
+  }
+}
+
+function drawPlayer(p) {
+  const sx = Math.floor(p.x - Game.camera.x);
+  const sy = Math.floor(p.y - Game.camera.y);
+
+  if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2 === 0) return;
+
+  ctx.save();
+  if (p.facing === -1) {
+    ctx.translate(sx + p.w, sy);
+    ctx.scale(-1, 1);
+  } else {
+    ctx.translate(sx, sy);
+  }
+
+  const crouch = p.crouching ? 4 : 0;
+  const running = Math.abs(p.vx) > 0.5 && p.onGround;
+  const legSwing = running ? Math.sin(p.runFrame * 6) * 3 : 0;
+
+  const skin = '#7a4a2a';
+  const skinShade = '#5a3a1a';
+  const outfit = '#4a2a7a';
+  const outfitShade = '#3a1a5a';
+  const accent = '#ffd700';
+
+  // Jetpack on back
+  ctx.fillStyle = '#666';
+  ctx.fillRect(0, 11 + crouch, 3, 8);
+  ctx.fillStyle = '#888';
+  ctx.fillRect(1, 11 + crouch, 1, 8);
+  ctx.fillStyle = accent;
+  ctx.fillRect(0, 13 + crouch, 1, 1);
+
+  // Legs
+  ctx.fillStyle = outfit;
+  if (!p.onGround) {
+    // Tucked legs while flying/jumping
+    ctx.fillRect(2, 18 + crouch, 4, 6);
+    ctx.fillRect(8, 18 + crouch, 4, 6);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(1, 22 + crouch, 6, 2);
+    ctx.fillRect(7, 22 + crouch, 6, 2);
+  } else {
+    ctx.fillRect(2, 18 + crouch, 4, 8 - crouch + legSwing);
+    ctx.fillRect(8, 18 + crouch, 4, 8 - crouch - legSwing);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(1, 24 + crouch + legSwing, 6, 2);
+    ctx.fillRect(7, 24 + crouch - legSwing, 6, 2);
+  }
+
+  // Torso
+  ctx.fillStyle = outfit;
+  ctx.fillRect(2, 10 + crouch, 10, 9);
+  ctx.fillStyle = outfitShade;
+  ctx.fillRect(2, 18 + crouch, 10, 1);
+  // #24
+  ctx.fillStyle = accent;
+  ctx.fillRect(5, 13 + crouch, 1, 3);
+  ctx.fillRect(7, 13 + crouch, 1, 3);
+  ctx.fillRect(9, 13 + crouch, 1, 3);
+
+  // Arms
+  ctx.fillStyle = skin;
+  if (p.attackTimer > 6) {
+    ctx.fillRect(11, 11 + crouch, 8, 3);
+    ctx.fillStyle = '#cccccc';
+    ctx.fillRect(18, 9 + crouch, 10, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(18, 10 + crouch, 10, 1);
+    ctx.fillStyle = accent;
+    ctx.fillRect(16, 9 + crouch, 2, 4);
+  } else {
+    ctx.fillRect(0, 11 + crouch, 3, 6 - legSwing * 0.3);
+    ctx.fillRect(11, 11 + crouch, 3, 6 + legSwing * 0.3);
+  }
+
+  // Head
+  ctx.fillStyle = skin;
+  ctx.fillRect(3, 2 + crouch, 8, 8);
+  ctx.fillStyle = skinShade;
+  ctx.fillRect(3, 9 + crouch, 8, 1);
+  ctx.fillStyle = '#1a0a0a';
+  ctx.fillRect(3, 1 + crouch, 8, 2);
+  ctx.fillRect(2, 2 + crouch, 1, 3);
+  ctx.fillRect(11, 2 + crouch, 1, 3);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(7, 5 + crouch, 2, 1);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(8, 5 + crouch, 1, 1);
+  ctx.fillStyle = '#3a1a0a';
+  ctx.fillRect(6, 8 + crouch, 3, 1);
+
+  ctx.restore();
+
+  // Attack swoosh
+  if (p.attackTimer > 8) {
+    const ax = p.facing === 1 ? sx + p.w : sx - 18;
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = p.attackTimer / 16;
+    ctx.beginPath();
+    ctx.arc(ax + 9, sy + 13, 12, 0, Math.PI);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawEnemy(e) {
+  const sx = Math.floor(e.x - Game.camera.x);
+  const sy = Math.floor(e.y - Game.camera.y);
+
+  ctx.fillStyle = (e.hurtTimer > 0 && Math.floor(e.hurtTimer / 2) % 2 === 0) ? '#ffffff' : '#aa2233';
+  ctx.fillRect(sx + 2, sy + 4, 12, 14);
+  ctx.fillStyle = '#661122';
+  ctx.fillRect(sx + 2, sy + 16, 12, 2);
+  ctx.fillStyle = e.hurtTimer > 0 ? '#000' : '#ff6644';
+  const eyeX = e.facing > 0 ? sx + 9 : sx + 4;
+  ctx.fillRect(eyeX, sy + 8, 3, 3);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(eyeX + (e.facing > 0 ? 2 : 0), sy + 9, 1, 1);
+  ctx.fillStyle = '#444';
+  ctx.fillRect(sx + 7, sy, 2, 4);
+  ctx.fillStyle = '#ff4444';
+  ctx.fillRect(sx + 6, sy - 1, 4, 2);
+  if (Math.floor(Game.time * 8) % 2 === 0) {
+    ctx.fillStyle = '#ffaa44';
+    ctx.fillRect(sx + 3, sy + 18, 3, 3);
+    ctx.fillRect(sx + 10, sy + 18, 3, 3);
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(sx + 4, sy + 19, 1, 2);
+    ctx.fillRect(sx + 11, sy + 19, 1, 2);
+  }
+}
+
+function drawPickup(pk) {
+  if (pk.taken) return;
+  const sx = pk.x - Game.camera.x;
+  const sy = pk.y - Game.camera.y;
+  const bob = Math.sin(Game.time * 3 + pk.x * 0.1) * 2;
+  if (pk.type === 'health') {
+    ctx.fillStyle = '#88ff88';
+    ctx.fillRect(sx + 4, sy + 1 + bob, 4, 10);
+    ctx.fillRect(sx + 1, sy + 4 + bob, 10, 4);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(sx + 5, sy + 2 + bob, 2, 2);
+  } else {
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.arc(sx + 6, sy + 6 + bob, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffaa00';
+    ctx.beginPath();
+    ctx.arc(sx + 6, sy + 6 + bob, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(sx + 4, sy + 4 + bob, 1, 1);
+  }
+}
+
+function drawExit() {
+  if (!Game.exit) return;
+  const sx = Game.exit.x - Game.camera.x;
+  const sy = Game.exit.y - Game.camera.y;
+  const pulse = Math.sin(Game.time * 4) * 0.3 + 0.7;
+  ctx.fillStyle = `rgba(138, 43, 226, ${pulse})`;
+  ctx.fillRect(sx - 2, sy, Game.exit.w + 4, Game.exit.h);
+  ctx.fillStyle = `rgba(255, 215, 0, ${pulse})`;
+  ctx.fillRect(sx + 2, sy + 4, Game.exit.w - 4, Game.exit.h - 8);
+  ctx.fillStyle = '#fff';
+  ctx.font = '8px monospace';
+  ctx.fillText('EXIT', sx - 2, sy - 4);
+}
+
+function drawParticles() {
+  for (const p of Game.particles) {
+    if (p.text) {
+      ctx.fillStyle = p.color;
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(p.text, p.x - Game.camera.x, p.y - Game.camera.y);
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.min(1, p.life / 25);
+      ctx.fillRect(Math.floor(p.x - Game.camera.x), Math.floor(p.y - Game.camera.y), p.size, p.size);
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+function drawLevelName() {
+  if (Game.time < 3) {
+    const alpha = Game.time < 2 ? 1 : (3 - Game.time);
+    ctx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.6})`;
+    ctx.fillRect(0, H/2 - 30, W, 60);
+    ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(Game.level.name, W/2, H/2 + 5);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawPauseOverlay() {
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('PAUSED', W/2, H/2);
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('Tap ⏸ or press P to resume', W/2, H/2 + 24);
+  ctx.textAlign = 'left';
+}
+
+function render() {
+  ctx.save();
+  if (Game.shake > 0) {
+    ctx.translate((Math.random() - 0.5) * Game.shake, (Math.random() - 0.5) * Game.shake);
+  }
+
+  drawBackground(Game.level ? Game.level.bg : 'station');
+
+  if (Game.level) {
+    drawTiles();
+    for (const pk of Game.pickups) drawPickup(pk);
+    drawExit();
+    for (const e of Game.enemies) drawEnemy(e);
+    if (Game.player) drawPlayer(Game.player);
+    drawParticles();
+    drawLevelName();
+  }
+
+  ctx.restore();
+
+  if (Game.state === 'paused') drawPauseOverlay();
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+
+let lastTime = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+// UI
+// ============================================================
+
+const UI = {
+  overlay: document.getElementById('overlay'),
+  hud: document.getElementById('hud'),
+  topButtons: document.getElementById('top-buttons'),
+  startBtn: document.getElementById('start-btn'),
+  storyEl: document.getElementById('story'),
+  controlsInfo: document.getElementById('controls-info'),
+  subtitle: document.getElementById('subtitle'),
+  musicBtn: document.getElementById('music-btn'),
+  musicClearBtn: document.getElementById('music-clear-btn'),
+  musicStatus: document.getElementById('music-status'),
+  fileInput: document.getElementById('file-input'),
+  pauseBtn: document.getElementById('btn-pause'),
+  muteBtn: document.getElementById('btn-mute'),
+
+  init() {
+    this.startBtn.addEventListener('click', () => this.handleStart());
+    this.musicBtn.addEventListener('click', () => this.fileInput.click());
+    this.musicClearBtn.addEventListener('click', () => this.clearMusic());
+    this.fileInput.addEventListener('change', (e) => this.handleFile(e));
+    this.pauseBtn.addEventListener('click', () => Game.togglePause());
+    this.muteBtn.addEventListener('click', () => Audio.toggleMute());
+  },
+
+  showOverlay(title, subtitle, body, btnText, showControls = false) {
+    document.querySelector('#overlay h1').textContent = title;
+    this.subtitle.textContent = subtitle;
+    this.storyEl.textContent = body;
+    this.controlsInfo.style.display = showControls ? 'block' : 'none';
+    this.startBtn.textContent = btnText;
+    this.overlay.classList.remove('hidden');
+    this.hud.classList.add('hidden');
+    this.topButtons.classList.add('hidden');
+    // Hide music UI on non-menu overlays
+    const isMenu = Game.state === 'menu' || Game.state === 'won' || Game.state === 'dead';
+    this.musicBtn.style.display = isMenu ? '' : 'none';
+    this.musicClearBtn.style.display = (isMenu && Audio.customBuffer) ? '' : 'none';
+    this.musicStatus.style.display = isMenu ? '' : 'none';
+  },
+
+  hideOverlay() {
+    this.overlay.classList.add('hidden');
+    this.hud.classList.remove('hidden');
+    this.topButtons.classList.remove('hidden');
+  },
+
+  handleStart() {
+    Audio.resume(); // iOS requires gesture-triggered audio init
+    if (Game.state === 'menu' || Game.state === 'won' || Game.state === 'dead') {
+      this.startGame();
+    } else if (Game.state === 'levelClear') {
+      this.nextLevel();
+    }
+  },
+
+  startGame() {
+    Game.reset();
+    loadLevel(0);
+    Game.setState('playing');
+    Audio.startMusic();
+    this.hideOverlay();
+  },
+
+  nextLevel() {
+    if (Game.levelIndex + 1 >= LEVELS.length) {
+      Game.setState('won');
+      Audio.victory();
+      Audio.stopMusic();
+    } else {
+      Game.time = 0;
+      loadLevel(Game.levelIndex + 1);
+      Game.setState('playing');
+      Audio.startMusic();
+      this.hideOverlay();
+    }
+  },
+
+  onStateChange(state) {
+    if (state === 'levelClear') {
+      this.showOverlay(
+        'SECTOR CLEAR',
+        `// LEVEL ${Game.levelIndex + 1} COMPLETE //`,
+        Game.levelIndex + 1 < LEVELS.length
+          ? "The corridor seals behind you. Keep climbing."
+          : "You see the way out.",
+        'CONTINUE'
+      );
+    } else if (state === 'dead') {
+      this.showOverlay(
+        'YOU FELL',
+        '// THE STATION CLAIMED YOU //',
+        `Final score: ${Game.score}. The mamba doesn't quit. Try again.`,
+        'RETRY'
+      );
+    } else if (state === 'won') {
+      this.showOverlay(
+        'ASCENT COMPLETE',
+        `// FINAL SCORE: ${Game.score} //`,
+        "You stand on the bridge. The station drifts silent above the planet. The horizon is yours now.",
+        'PLAY AGAIN'
+      );
+    }
+  },
+
+  async handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    this.musicStatus.textContent = `Loading "${file.name}"...`;
+    try {
+      Audio.resume();
+      const arrayBuffer = await file.arrayBuffer();
+      await Audio.loadCustom(arrayBuffer);
+      await MusicStore.save(arrayBuffer, file.name);
+      this.musicStatus.innerHTML = `♫ <span style="color:#88ff88;">${file.name}</span> ready`;
+      this.musicClearBtn.classList.remove('hidden');
+      this.musicClearBtn.style.display = '';
+    } catch (err) {
+      console.error(err);
+      this.musicStatus.innerHTML = `<span style="color:#ff6666;">Couldn't load that file</span>`;
+    }
+  },
+
+  async clearMusic() {
+    Audio.clearCustom();
+    await MusicStore.clear();
+    this.musicStatus.textContent = 'Music cleared';
+    this.musicClearBtn.classList.add('hidden');
+  },
+
+  async loadStoredMusic() {
+    const stored = await MusicStore.load();
+    if (stored && stored.data) {
+      try {
+        Audio.init();
+        await Audio.loadCustom(stored.data);
+        this.musicStatus.innerHTML = `♫ <span style="color:#88ff88;">${stored.name || 'Saved track'}</span>`;
+        this.musicClearBtn.classList.remove('hidden');
+      } catch (e) {
+        console.warn('Could not reload stored music', e);
+      }
+    }
+  },
+};
+
+// ============================================================
+// BOOT
+// ============================================================
+
+function resize() {
+  const container = document.getElementById('game-container');
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  const scale = Math.min(cw / W, ch / H);
+  canvas.style.width  = (W * scale) + 'px';
+  canvas.style.height = (H * scale) + 'px';
+}
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+resize();
+
+Input.init();
+UI.init();
+UI.loadStoredMusic();
+
+// Pause when tab loses focus (mobile background, etc.)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && Game.state === 'playing') {
+    Game.togglePause();
+  }
+});
+
+// PWA service worker registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
