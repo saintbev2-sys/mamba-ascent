@@ -2,52 +2,255 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Mamba's Ascent</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    width: 100%; height: 100%; overflow: hidden;
-    background: #0a0a0f; color: #e8e8e8;
-    font-family: 'Courier New', monospace;
-    touch-action: none; user-select: none;
-  }
-  #game-container {
-    width: 100vw; height: 100vh; position: relative;
-    display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%);
-  }
-  canvas {
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    background: #000;
-    box-shadow: 0 0 40px rgba(138, 43, 226, 0.3);
-    max-width: 100%; max-height: 100%;
-  }
-  #hud { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; font-size: 14px; letter-spacing: 1px; text-shadow: 2px 2px 0 #000; }
-  #hud .health { color: #ff4444; }
-  #hud .level { color: #88ccff; }
-  #overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.92);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 20; padding: 20px; text-align: center;
-  }
-  #overlay h1 { font-size: clamp(28px, 7vw, 56px); color: #ffd700; letter-spacing: 4px; text-shadow: 4px 4px 0 #8a2be2; margin-bottom: 10px; }
-  #overlay button {
-    background: #ffd700; color: #000; border: none; padding: 14px 36px;
-    font-family: inherit; font-size: 16px; font-weight: bold; letter-spacing: 2px;
-    cursor: pointer; box-shadow: 4px 4px 0 #8a2be2; margin: 8px;
-  }
-  #overlay button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #8a2be2; }
-  .char-select { display: flex; gap: 20px; margin: 20px 0; }
-  .char-btn {
-    background: rgba(255,215,0,0.1); border: 2px solid #ffd700; color: #ffd700;
-    padding: 12px 24px; font-size: 15px; cursor: pointer;
-  }
-  .touch-btn { /* keep your existing touch button styles */ }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0f; color: #e8e8e8; font-family: 'Courier New', monospace; touch-action: none; user-select: none; }
+  #game-container { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 100%); }
+  canvas { image-rendering: pixelated; background: #000; box-shadow: 0 0 40px rgba(138, 43, 226, 0.4); max-width: 100%; max-height: 100%; }
+  #hud { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; font-size: 14px; text-shadow: 2px 2px 0 #000; }
+  #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; padding: 20px; text-align: center; }
+  #overlay h1 { font-size: clamp(32px, 8vw, 56px); color: #ffd700; letter-spacing: 4px; text-shadow: 4px 4px 0 #8a2be2; }
+  #overlay h2 { color: #ff3366; letter-spacing: 2px; margin: 10px 0 20px; }
+  .char-select { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
+  .char-btn { background: rgba(255,215,0,0.1); border: 2px solid #ffd700; color: #ffd700; padding: 14px 28px; font-size: 15px; cursor: pointer; }
+  button { background: #ffd700; color: #000; border: none; padding: 14px 36px; font-weight: bold; letter-spacing: 2px; cursor: pointer; margin-top: 10px; }
+  button:active { transform: translate(2px, 2px); }
   .hidden { display: none !important; }
 </style>
 </head>
 <body>
+
 <div id="game-container">
-  <canvas id="game" width="640
+  <canvas id="game" width="640" height="360"></canvas>
+  
+  <div id="hud" class="hidden">
+    <div>HP <span id="hp-display">100</span></div>
+    <div>LEVEL <span id="level-display">1</span></div>
+    <div>SCORE <span id="score-display">0</span></div>
+  </div>
+
+  <div id="overlay">
+    <h1>MAMBA'S ASCENT</h1>
+    <h2>// HELIOS STATION PROTOCOL //</h2>
+    <p>Corporate experiment gone wrong. Something lurks in the vents. Choose your runner and climb out alive.</p>
+    
+    <div class="char-select">
+      <button class="char-btn" id="select-boy">BOY — STREET RUNNER</button>
+      <button class="char-btn" id="select-girl">GIRL — SHADOW FIXER</button>
+    </div>
+    
+    <button id="start-btn" class="hidden">BEGIN ASCENT</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = 640, H = 360, TILE = 20;
+
+let currentCharacter = 'girl';
+let game = {
+  state: 'menu',
+  levelIndex: 0,
+  score: 0,
+  player: null,
+  enemies: [],
+  pickups: [],
+  particles: [],
+  attacks: [],
+  level: null,
+  camera: {x: 0, y: 0},
+  exit: null,
+  time: 0,
+  shake: 0
+};
+
+const keys = {};
+
+// Simple input
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (['Space', 'ArrowUp', 'KeyW'].includes(e.code)) e.preventDefault();
+});
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+// ==================== 8 LEVELS ====================
+const LEVELS = [
+  {name: "DECK 1 - AWAKENING", bg: 'station', map: ["................................","................................","................$...............","...........=====................","................................",".........$......................",".....======.....................","................E...........X...","..............=====.........#...",".....*....E.................#...","P..============......===....#...","##..............................","##.....^^^......................","################################","################################"]},
+  {name: "ZERO-G CORRIDOR", bg: 'station', map: ["................................",".....$..........................","....====........................","................$$$.............","..........=========.............","................................",".......E........................","....========....................","................E........X......","...^^........=========...#......","########............=====#......","P.............*..........#......","===.....^^^^^.....^^^....#......","........................========","................................","################################"]},
+  {name: "MAINTENANCE TUNNELS", bg: 'station', map: ["................................","..................$.............","..............======............","................................",".....E......................X...","...........==============.......","............................#...","P....*......................#...","=============.....^^^^^^....#...","............................#...",".....E..............E.......#...","##..........................#...","################################","################################"]},
+  {name: "EMERGENCY SHAFT", bg: 'station', map: ["................................",".......................$........","...................======.......","................................","..............E.............X...","..........==============........","P...........................#...","============.....^^^^^^.....#...","............................#...",".....E......................#...","##..........................#...","################################","################################"]},
+  {name: "CONTAINMENT LEVEL 4", bg: 'station', map: ["................................","........$.......................",".....======.....................","................................","................E...........X...","............==========..........","P...........................#...","==============......^^^^....#...","............................#...","##.....E....................#...","################################","################################"]},
+  {name: "OVERFLOW SECTOR", bg: 'station', map: ["................................","......................$.........","..............==========........","................................",".....E......................X...","..........==============........","P...............*...........#...","===============.....^^^^^^..#...","##..........................#...","################################","################################"]},
+  {name: "REDACTED WING", bg: 'station', map: ["................................","......................$.........","..............==========........","................................",".....E......................X...","..........==============........","P...............*...........#...","===============.....^^^^^^..#...","##..........................#...","################################","################################"]},
+  {name: "THE CORE - FINAL ASCENT", bg: 'station', map: ["................................","......................$.........","..............==========........","................................",".....E......................X...","..........==============........","P...............*...........#...","===============.....^^^^^^..#...","##..........................#...","################################","################################"]}
+];
+
+// ==================== PLAYER ====================
+function makePlayer(x, y) {
+  return {
+    x, y, w: 14, h: 26,
+    vx: 0, vy: 0,
+    onGround: false,
+    facing: 1,
+    hp: 100,
+    fuel: 100,
+    attackTimer: 0,
+    attackCooldown: 0,
+    invuln: 0,
+    crouching: false,
+    runFrame: 0,
+    dead: false
+  };
+}
+
+function updatePlayer(p, dt) {
+  if (p.dead) return;
+
+  // Movement (speed unchanged)
+  const speed = 1.8;
+  let target = 0;
+  if (keys['ArrowLeft'] || keys['KeyA']) { target = -speed; p.facing = -1; }
+  if (keys['ArrowRight'] || keys['KeyD']) { target = speed; p.facing = 1; }
+  p.vx += (target - p.vx) * 0.4;
+
+  // Jump (unchanged)
+  if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && p.onGround) {
+    p.vy = -5.2;
+    p.onGround = false;
+  }
+
+  // Gravity
+  p.vy += 0.32;
+  if (p.vy > 9) p.vy = 9;
+
+  // Jetpack (helpful buff - better efficiency)
+  if ((keys['Space'] || keys['ArrowUp']) && !p.onGround && p.fuel > 0) {
+    p.vy -= 0.5;
+    p.fuel -= 0.4; // easier fuel use
+    if (p.fuel < 0) p.fuel = 0;
+  }
+  if (p.onGround) p.fuel = Math.min(100, p.fuel + 1.0);
+
+  // Simple move (expand collision as needed)
+  p.x += p.vx;
+  p.y += p.vy;
+
+  // Attack
+  if ((keys['KeyF'] || keys['KeyJ']) && p.attackCooldown <= 0) {
+    p.attackTimer = 16;
+    p.attackCooldown = 22;
+  }
+  p.attackTimer--;
+  p.attackCooldown--;
+}
+
+// ==================== DRAW PLAYER - TWO STYLES ====================
+function drawPlayer(p) {
+  const sx = Math.floor(p.x - game.camera.x);
+  const sy = Math.floor(p.y - game.camera.y);
+  if (p.invuln > 0 && Math.floor(p.invuln / 4) % 2 === 0) return;
+
+  ctx.save();
+  if (p.facing === -1) {
+    ctx.translate(sx + p.w, sy);
+    ctx.scale(-1, 1);
+  } else {
+    ctx.translate(sx, sy);
+  }
+
+  const crouch = p.crouching ? 4 : 0;
+
+  if (currentCharacter === 'girl') {
+    // Girl - black jacket + white fedora (photo inspired)
+    ctx.fillStyle = '#f0f0f0'; // white hat
+    ctx.fillRect(2, 0 + crouch, 12, 5);
+    ctx.fillStyle = '#1a1a1a'; // black jacket
+    ctx.fillRect(2, 6 + crouch, 12, 14);
+    ctx.fillStyle = '#c68c5e'; // skin tone
+    ctx.fillRect(4, 18 + crouch, 8, 10);
+    ctx.fillStyle = '#ff00aa'; // neon accent
+    ctx.fillRect(5, 10 + crouch, 6, 2);
+  } else {
+    // Boy - cyberpunk street runner
+    ctx.fillStyle = '#112244'; // dark hoodie
+    ctx.fillRect(2, 6 + crouch, 12, 14);
+    ctx.fillStyle = '#00ffcc'; // neon
+    ctx.fillRect(4, 10 + crouch, 8, 2);
+    ctx.fillStyle = '#d2a679'; // skin
+    ctx.fillRect(4, 18 + crouch, 8, 10);
+  }
+
+  // Attack slash
+  if (p.attackTimer > 8) {
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = p.attackTimer / 16;
+    ctx.beginPath();
+    ctx.moveTo(14, 12 + crouch);
+    ctx.lineTo(28, 8 + crouch);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// ==================== BASIC RENDER ====================
+function render() {
+  // Darker scary background with red emergency tint
+  ctx.fillStyle = '#0a050f';
+  ctx.fillRect(0, 0, W, H);
+
+  // Flickering red emergency light effect
+  if (Math.floor(game.time * 8) % 3 === 0) {
+    ctx.fillStyle = 'rgba(255, 40, 40, 0.08)';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  if (game.player) drawPlayer(game.player);
+}
+
+let lastTime = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  game.time += dt;
+
+  if (game.state === 'playing') {
+    updatePlayer(game.player, dt);
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ==================== CHARACTER SELECT ====================
+document.getElementById('select-boy').addEventListener('click', () => {
+  currentCharacter = 'boy';
+  document.getElementById('start-btn').classList.remove('hidden');
+});
+
+document.getElementById('select-girl').addEventListener('click', () => {
+  currentCharacter = 'girl';
+  document.getElementById('start-btn').classList.remove('hidden');
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  game.state = 'playing';
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('hud').classList.remove('hidden');
+  
+  // Start first level
+  game.levelIndex = 0;
+  game.player = makePlayer(60, 200);
+  console.log(`Started as ${currentCharacter}`);
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
