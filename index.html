@@ -1,5 +1,4 @@
-<<!DOCTYPE html>
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -14,55 +13,54 @@
   #game-container { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #1a0a1a 0%, #0a0508 100%); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   canvas { image-rendering: pixelated; image-rendering: -moz-crisp-edges; background: #000; box-shadow: 0 0 40px rgba(255, 0, 60, 0.3); max-width: 100%; max-height: 100%; display: block; }
 
-#hud { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(110px, env(safe-area-inset-right)); display: flex; justify-content: space-between; pointer-events: none; z-index: 10; font-size: 11px; letter-spacing: 1px; text-shadow: 2px 2px 0 #000; gap: 8px; }
-#hud .stat-block { display: flex; flex-direction: column; gap: 4px; }
-#hud .health { color: #ff5566; }
-#hud .fuel { color: #66ccff; }
-#hud .level { color: #ffaa44; }
-#hud .score { color: #ffd700; }
-#hud .meter { display: inline-block; width: 70px; height: 6px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); margin-left: 6px; vertical-align: middle; }
-#hud .meter > div { height: 100%; transition: width 0.1s; }
-#hp-bar { background: linear-gradient(90deg, #ff3344, #ff8866); }
-#fuel-bar { background: linear-gradient(90deg, #4488ff, #88ddff); }
+  #hud { position: absolute; top: max(10px, env(safe-area-inset-top)); left: max(12px, env(safe-area-inset-left)); right: max(110px, env(safe-area-inset-right)); display: flex; justify-content: space-between; pointer-events: none; z-index: 10; font-size: 11px; letter-spacing: 1px; text-shadow: 2px 2px 0 #000; gap: 8px; }
+  #hud .stat-block { display: flex; flex-direction: column; gap: 4px; }
+  #hud .health { color: #ff5566; }
+  #hud .fuel { color: #66ccff; }
+  #hud .level { color: #ffaa44; }
+  #hud .score { color: #ffd700; }
+  #hud .meter { display: inline-block; width: 70px; height: 6px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); margin-left: 6px; vertical-align: middle; }
+  #hud .meter > div { height: 100%; transition: width 0.1s; }
+  #hp-bar { background: linear-gradient(90deg, #ff3344, #ff8866); }
+  #fuel-bar { background: linear-gradient(90deg, #4488ff, #88ddff); }
 
-#top-buttons { position: absolute; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); display: flex; gap: 6px; z-index: 12; }
-.top-btn { width: 38px; height: 38px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,215,0,0.4); color: #ffd700; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; }
-.top-btn:active { background: rgba(255,215,0,0.3); }
+  #top-buttons { position: absolute; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); display: flex; gap: 6px; z-index: 12; }
+  .top-btn { width: 38px; height: 38px; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,215,0,0.4); color: #ffd700; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 6px; }
+  .top-btn:active { background: rgba(255,215,0,0.3); }
 
-#overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); text-align: center; overflow-y: auto; }
-#overlay h1 { font-size: clamp(28px, 7vw, 56px); color: #ffd700; letter-spacing: 4px; text-shadow: 4px 4px 0 #8a2be2, 0 0 20px rgba(255,0,60,0.5); margin-bottom: 8px; line-height: 1.1; }
-#overlay h2 { font-size: clamp(11px, 2.2vw, 16px); color: #ff3366; letter-spacing: 2px; margin-bottom: 16px; }
-#overlay p { font-size: clamp(12px, 1.9vw, 14px); max-width: 460px; line-height: 1.5; margin-bottom: 14px; color: #bbb; padding: 0 10px; }
+  #overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.94); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); text-align: center; overflow-y: auto; }
+  #overlay h1 { font-size: clamp(28px, 7vw, 56px); color: #ffd700; letter-spacing: 4px; text-shadow: 4px 4px 0 #8a2be2, 0 0 20px rgba(255,0,60,0.5); margin-bottom: 8px; line-height: 1.1; }
+  #overlay h2 { font-size: clamp(11px, 2.2vw, 16px); color: #ff3366; letter-spacing: 2px; margin-bottom: 16px; }
+  #overlay p { font-size: clamp(12px, 1.9vw, 14px); max-width: 460px; line-height: 1.5; margin-bottom: 14px; color: #bbb; padding: 0 10px; }
 
-.char-select { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 14px 0; }
-.char-btn { background: rgba(255,215,0,0.05); border: 2px solid rgba(255,215,0,0.4); color: #ffd700; padding: 12px 20px; font-family: inherit; font-size: 13px; cursor: pointer; letter-spacing: 1px; min-width: 160px; }
-.char-btn.selected { background: rgba(255,215,0,0.2); border-color: #ffd700; color: #fff; box-shadow: 0 0 12px rgba(255,215,0,0.4); }
-.char-btn:active { transform: scale(0.97); }
+  .char-select { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 14px 0; }
+  .char-btn { background: rgba(255,215,0,0.05); border: 2px solid rgba(255,215,0,0.4); color: #ffd700; padding: 12px 20px; font-family: inherit; font-size: 13px; cursor: pointer; letter-spacing: 1px; min-width: 160px; }
+  .char-btn.selected { background: rgba(255,215,0,0.2); border-color: #ffd700; color: #fff; box-shadow: 0 0 12px rgba(255,215,0,0.4); }
+  .char-btn:active { transform: scale(0.97); }
 
-#overlay .controls { background: rgba(255,255,255,0.04); padding: 12px 18px; border: 1px solid #333; margin: 14px 0; font-size: 11px; line-height: 1.6; border-radius: 4px; max-width: 420px; }
-#overlay .controls span { color: #ffd700; }
-#overlay .btn { background: #ffd700; color: #000; border: none; padding: 14px 30px; font-family: inherit; font-size: 14px; font-weight: bold; letter-spacing: 2px; cursor: pointer; box-shadow: 4px 4px 0 #8a2be2; margin: 6px; border-radius: 2px; -webkit-appearance: none; }
-#overlay .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #8a2be2; }
-#overlay .btn-secondary { background: transparent; color: #ffd700; border: 2px solid #ffd700; box-shadow: 4px 4px 0 #8a2be2; font-size: 12px; padding: 10px 18px; }
-#overlay .btn-tiny { background: transparent; color: #888; border: 1px solid #444; box-shadow: none; font-size: 10px; padding: 6px 10px; }
-#music-status { color: #88ccff; font-size: 11px; margin-top: 6px; min-height: 16px; }
+  #overlay .controls { background: rgba(255,255,255,0.04); padding: 12px 18px; border: 1px solid #333; margin: 14px 0; font-size: 11px; line-height: 1.6; border-radius: 4px; max-width: 420px; }
+  #overlay .controls span { color: #ffd700; }
+  #overlay .btn { background: #ffd700; color: #000; border: none; padding: 14px 30px; font-family: inherit; font-size: 14px; font-weight: bold; letter-spacing: 2px; cursor: pointer; box-shadow: 4px 4px 0 #8a2be2; margin: 6px; border-radius: 2px; -webkit-appearance: none; }
+  #overlay .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #8a2be2; }
+  #overlay .btn-secondary { background: transparent; color: #ffd700; border: 2px solid #ffd700; box-shadow: 4px 4px 0 #8a2be2; font-size: 12px; padding: 10px 18px; }
+  #overlay .btn-tiny { background: transparent; color: #888; border: 1px solid #444; box-shadow: none; font-size: 10px; padding: 6px 10px; }
+  #music-status { color: #88ccff; font-size: 11px; margin-top: 6px; min-height: 16px; }
 
-#touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 15; display: none; }
-#touch-controls.active { display: block; }
-.touch-btn { position: absolute; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,215,0,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffd700; font-size: 26px; font-weight: bold; pointer-events: auto; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.touch-btn.pressed { background: rgba(255,215,0,0.35); border-color: #ffd700; }
-#btn-left { width: 60px; height: 60px; bottom: max(20px, env(safe-area-inset-bottom)); left: max(20px, env(safe-area-inset-left)); }
-#btn-right { width: 60px; height: 60px; bottom: max(20px, env(safe-area-inset-bottom)); left: calc(max(20px, env(safe-area-inset-left)) + 72px); }
-#btn-fly { width: 78px; height: 78px; bottom: calc(max(20px, env(safe-area-inset-bottom)) + 65px); right: max(20px, env(safe-area-inset-right)); background: rgba(100,200,255,0.15); border-color: rgba(100,200,255,0.5); color: #88ddff; font-size: 26px; }
-#btn-fly.pressed { background: rgba(100,200,255,0.4); }
-#btn-attack { width: 66px; height: 66px; bottom: max(20px, env(safe-area-inset-bottom)); right: calc(max(20px, env(safe-area-inset-right)) + 88px); background: rgba(255,68,68,0.15); border-color: rgba(255,68,68,0.5); color: #ff8888; }
-#btn-attack.pressed { background: rgba(255,68,68,0.4); }
-#btn-down { width: 54px; height: 54px; bottom: max(20px, env(safe-area-inset-bottom)); right: calc(max(20px, env(safe-area-inset-right)) + 12px); font-size: 20px; }
+  #touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 15; display: none; }
+  #touch-controls.active { display: block; }
+  .touch-btn { position: absolute; background: rgba(255,255,255,0.08); border: 2px solid rgba(255,215,0,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffd700; font-size: 26px; font-weight: bold; pointer-events: auto; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  .touch-btn.pressed { background: rgba(255,215,0,0.35); border-color: #ffd700; }
+  #btn-left { width: 60px; height: 60px; bottom: max(20px, env(safe-area-inset-bottom)); left: max(20px, env(safe-area-inset-left)); }
+  #btn-right { width: 60px; height: 60px; bottom: max(20px, env(safe-area-inset-bottom)); left: calc(max(20px, env(safe-area-inset-left)) + 72px); }
+  #btn-fly { width: 78px; height: 78px; bottom: calc(max(20px, env(safe-area-inset-bottom)) + 65px); right: max(20px, env(safe-area-inset-right)); background: rgba(100,200,255,0.15); border-color: rgba(100,200,255,0.5); color: #88ddff; font-size: 26px; }
+  #btn-fly.pressed { background: rgba(100,200,255,0.4); }
+  #btn-attack { width: 66px; height: 66px; bottom: max(20px, env(safe-area-inset-bottom)); right: calc(max(20px, env(safe-area-inset-right)) + 88px); background: rgba(255,68,68,0.15); border-color: rgba(255,68,68,0.5); color: #ff8888; }
+  #btn-attack.pressed { background: rgba(255,68,68,0.4); }
+  #btn-down { width: 54px; height: 54px; bottom: max(20px, env(safe-area-inset-bottom)); right: calc(max(20px, env(safe-area-inset-right)) + 12px); font-size: 20px; }
 
-.hidden { display: none !important; }
-#file-input { display: none; }
+  .hidden { display: none !important; }
+  #file-input { display: none; }
 </style>
-
 </head>
 <body>
 
@@ -90,33 +88,30 @@
     <h2 id="subtitle">// HELIOS STATION PROTOCOL //</h2>
     <p id="story">Corporate experiment gone wrong. The crew is gone. Something hunts in the corridors. Choose your runner and climb out alive.</p>
 
-```
-<div id="char-select-area">
-  <div class="char-select">
-    <button class="char-btn" id="select-boy" data-char="boy">BOY · STREET RUNNER</button>
-    <button class="char-btn selected" id="select-girl" data-char="girl">GIRL · SHADOW FIXER</button>
-  </div>
-</div>
+    <div id="char-select-area">
+      <div class="char-select">
+        <button class="char-btn" id="select-boy" data-char="boy">BOY · STREET RUNNER</button>
+        <button class="char-btn selected" id="select-girl" data-char="girl">GIRL · SHADOW FIXER</button>
+      </div>
+    </div>
 
-<div class="controls" id="controls-info">
-  <div><span>← →</span> / <span>A D</span> · Move</div>
-  <div><span>↑</span> / <span>SPACE</span> · Jump <em style="color:#88ddff">(hold = jetpack)</em></div>
-  <div><span>F</span> / <span>J</span> · Attack</div>
-  <div><span>P</span> · Pause &nbsp;&nbsp; <span>M</span> · Mute</div>
-  <div style="margin-top:6px;color:#88ddff;font-size:10px;">📱 Mobile: hold ▲ to fly</div>
-</div>
+    <div class="controls" id="controls-info">
+      <div><span>← →</span> / <span>A D</span> · Move</div>
+      <div><span>↑</span> / <span>SPACE</span> · Jump <em style="color:#88ddff">(hold = jetpack)</em></div>
+      <div><span>F</span> / <span>J</span> · Attack</div>
+      <div><span>P</span> · Pause &nbsp;&nbsp; <span>M</span> · Mute</div>
+      <div style="margin-top:6px;color:#88ddff;font-size:10px;">📱 Mobile: hold ▲ to fly</div>
+    </div>
 
-<div>
-  <button class="btn" id="start-btn">BEGIN ASCENT</button>
-</div>
-<div>
-  <button class="btn btn-secondary" id="music-btn">♫ LOAD CUSTOM MUSIC</button>
-  <button class="btn btn-tiny hidden" id="music-clear-btn">✕ CLEAR</button>
-</div>
-<div id="music-status"></div>
-<input type="file" id="file-input" accept="audio/*">
-```
-
+    <div>
+      <button class="btn" id="start-btn">BEGIN ASCENT</button>
+    </div>
+    <div>
+      <button class="btn btn-secondary" id="music-btn">♫ LOAD CUSTOM MUSIC</button>
+      <button class="btn btn-tiny hidden" id="music-clear-btn">✕ CLEAR</button>
+    </div>
+    <div id="music-status"></div>
+    <input type="file" id="file-input" accept="audio/*">
   </div>
 
   <div id="touch-controls">
@@ -1108,6 +1103,5 @@ document.addEventListener('visibilitychange', () => {
 
 requestAnimationFrame(loop);
 </script>
-
 </body>
 </html>
